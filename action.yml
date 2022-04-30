@@ -1,0 +1,24 @@
+name: 'Publish python package'
+description: 'Publish the python package'
+inputs:
+  url:
+    description: 'The url of the pypi repository'
+    required: true
+  user:
+    description: 'The username to be used to connect to the pypi repository'
+    required: true
+  password:
+    description: 'The password to be used to connect to the pypi repository'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Configure remote in poetry
+      shell: bash
+      run: |
+        poetry config repositories.my-remote ${{ inputs.url }}
+        poetry config http-basic.my-remote ${{ inputs.user }} ${{ inputs.password }}
+
+    - name: Publish to remote
+      shell: bash
+      run: poetry publish -r my-remote --build
