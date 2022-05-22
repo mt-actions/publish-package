@@ -1,6 +1,9 @@
-name: 'Publish python package'
-description: 'Publish the python package'
+name: 'Publish package'
+description: 'Publish the package'
 inputs:
+  package_type:
+    description: 'The type of package to be published'
+    required: true
   url:
     description: 'The url of the pypi repository'
     required: true
@@ -10,15 +13,32 @@ inputs:
   password:
     description: 'The password to be used to connect to the pypi repository'
     required: true
+  package_path:
+    description: 'The path package to be published. Optional depending on package_type'
+    required: false
+
 runs:
   using: "composite"
   steps:
     - name: Configure remote in poetry
+      if: ${{ inputs.package_type == 'python' }}
       shell: bash
       run: |
         poetry config repositories.my-remote ${{ inputs.url }}
         poetry config http-basic.my-remote ${{ inputs.user }} ${{ inputs.password }}
 
-    - name: Publish to remote
+    - name: Publish python package to remote
+      if: ${{ inputs.package_type == 'python' }}
       shell: bash
       run: poetry publish -r my-remote --build
+
+    - name: Configure nuget remote
+      if: ${{ inputs.package_type == 'csharp' }}
+      shell: powershell
+      run: nuget sources Add -Name Artifactory -Source ${{ inputs.url}} -username ${{ inputs.user }} -password ${{ inputs.password }}
+
+    - name: Publish nuget package
+      if: ${{ inputs.package_type == 'csharp' }}
+      shell: powershell
+      run: nuget push ${{ inputs.package_path}} -Source Artifactory
+
